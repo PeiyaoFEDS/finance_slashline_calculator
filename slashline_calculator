@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>斩杀线距离测评｜家庭财务容错力计算器</title>
+  <style>
+    :root { --bd:#e5e7eb; --fg:#111827; --muted:#6b7280; --bg:#ffffff; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC","Hiragino Sans GB","Microsoft YaHei", Arial, sans-serif;
+      background:#f6f7fb; color:var(--fg); margin:0; padding:24px; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    .card { background:var(--bg); border:1px solid var(--bd); border-radius:16px; padding:20px; box-shadow: 0 6px 20px rgba(17,24,39,.06); }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    p.lead { margin: 0 0 16px; color:var(--muted); line-height:1.6; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:14px; }
+    @media (min-width: 860px){ .grid{ grid-template-columns: 1fr 1fr; } }
+    .q { border:1px solid var(--bd); border-radius:14px; padding:14px; background:#fff; }
+    .q h3 { margin:0 0 8px; font-size: 16px; }
+    .q small { display:block; color:var(--muted); margin-bottom:10px; line-height:1.5; }
+    .opts { display:grid; gap:8px; }
+    label.opt { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--bd);
+      border-radius:12px; cursor:pointer; transition:.15s; }
+    label.opt:hover { background:#f9fafb; }
+    input[type="radio"] { margin-top:3px; }
+    .bar { height:10px; border-radius:999px; background:#e5e7eb; overflow:hidden; }
+    .bar > div { height:100%; width:0%; background:#111827; transition: width .25s ease; }
+    .row { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .pill { font-size: 12px; padding:6px 10px; border:1px solid var(--bd); border-radius:999px; color:var(--muted); background:#fff; }
+    .btns { display:flex; gap:10px; flex-wrap:wrap; margin-top: 14px; }
+    button { border:1px solid var(--bd); background:#111827; color:#fff; border-radius:12px; padding:10px 14px;
+      cursor:pointer; font-weight:600; }
+    button.secondary { background:#fff; color:#111827; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .result { margin-top: 16px; border-top:1px dashed var(--bd); padding-top:16px; }
+    .score { font-size: 34px; font-weight: 800; margin: 6px 0; }
+    .tag { display:inline-block; font-size: 12px; padding:6px 10px; border-radius:999px; border:1px solid var(--bd); background:#fff; }
+    .kvs { display:grid; grid-template-columns:1fr; gap:10px; margin-top:12px; }
+    @media (min-width: 860px){ .kvs{ grid-template-columns: 1fr 1fr; } }
+    .kv { border:1px solid var(--bd); border-radius:14px; padding:12px; background:#fff; }
+    .kv b { display:block; margin-bottom:6px; }
+    .muted { color:var(--muted); line-height:1.6; }
+    .footer { margin-top: 14px; font-size: 12px; color: var(--muted); }
+    .warn { color:#b45309; }
+    .good { color:#047857; }
+    .cold { color:#1d4ed8; }
+    .danger { color:#b91c1c; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <div>
+        <h1>算算你离“斩杀线”还有多远</h1>
+        <p class="lead">
+          3分钟快速测评你的家庭财务“容错力”（现金缓冲、固定支出压力、风险保障、Plan B）。
+          结果用于自我评估与学习，不构成个别化投资/保险/税务建议。
+        </p>
+      </div>
+      <div style="min-width:240px;">
+        <div class="row">
+          <span class="pill" id="progressText">已完成 0 / 8</span>
+          <span class="pill" id="missingText">未完成：8</span>
+        </div>
+        <div class="bar" aria-label="progress">
+          <div id="progressBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" id="questions"></div>
+
+    <div class="btns">
+      <button id="calcBtn" disabled>计算我的斩杀线距离</button>
+      <button class="secondary" id="resetBtn">重置</button>
+      <button class="secondary" id="copyBtn" disabled>复制结果摘要</button>
+    </div>
+
+    <div class="result" id="result" style="display:none;">
+      <div class="row">
+        <div>
+          <span class="tag" id="zoneTag"></span>
+          <div class="score"><span id="scoreNum">--</span><span style="font-size:14px; font-weight:700; color:var(--muted);"> / 100</span></div>
+          <div class="muted" id="zoneDesc"></div>
+        </div>
+        <div style="min-width:280px; flex:1;">
+          <div class="kv">
+            <b>你的“血条”</b>
+            <div class="bar"><div id="hpBar"></div></div>
+            <div class="footer" id="hpText"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kvs">
+        <div class="kv">
+          <b>模块得分（用于找到薄弱点）</b>
+          <div class="muted" id="moduleScores"></div>
+        </div>
+        <div class="kv">
+          <b>你的最大风险来自（优先级Top 2）</b>
+          <div class="muted" id="topRisks"></div>
+        </div>
+        <div class="kv">
+          <b>给你的 3 步行动（本周 / 30天 / 90天）</b>
+          <div class="muted" id="actions"></div>
+        </div>
+        <div class="kv">
+          <b>讲座衔接提示（可用于你自己的课）</b>
+          <div class="muted" id="bridge"></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        说明：固定支出比率=（住房+车贷+学贷+保险+最低还款等固定支出）/（月到手收入）。
+        你可以根据讲座内容调整分值与题目。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- Question bank (8 questions) ---
+  // Scoring totals:
+  // A Cash Buffer: 30
+  // B Fixed Cost & Debt Pressure: 30
+  // C Risk Exposure / Protection: 20
+  // D Income Concentration / Plan B: 20
+  const QUESTIONS = [
+    {
+      id: "A1",
+      module: "现金缓冲",
+      weightMax: 30,
+      title: "1) 你家应急金可以覆盖几个月“必要支出”？",
+      helper: "必要支出≈房/租+吃+水电网+必要交通+保险等。",
+      options: [
+        { label: "0–1个月", score: 0 },
+        { label: "1–3个月", score: 10 },
+        { label: "3–6个月", score: 20 },
+        { label: "6个月以上", score: 30 }
+      ]
+    },
+    {
+      id: "A2",
+      module: "现金缓冲",
+      weightMax: 0, // used as adjustment
+      title: "2) 出现 $400–$1,000 紧急支出时，你最可能怎么处理？",
+      helper: "这一题用于微调：同样应急金水平，不同处理方式风险不同。",
+      options: [
+        { label: "刷信用卡并分期/最低还款", score: -5 },
+        { label: "借钱/延迟支付", score: -2 },
+        { label: "从一般储蓄直接支付", score: 0 },
+        { label: "从专门应急金支付", score: +2 }
+      ]
+    },
+    {
+      id: "B1",
+      module: "固定支出压力",
+      weightMax: 30,
+      title: "3) 你的固定支出/到手收入比例大约是多少？",
+      helper: "固定支出含：住房、车贷、学贷、保险、最低还款等。",
+      options: [
+        { label: "≥70%", score: 0 },
+        { label: "50%–70%", score: 10 },
+        { label: "35%–50%", score: 20 },
+        { label: "≤35%", score: 30 }
+      ]
+    },
+    {
+      id: "B2",
+      module: "固定支出压力",
+      weightMax: 0, // adjustment
+      title: "4) 你是否有高息债务（信用卡滚动余额/压力型学贷）？",
+      helper: "高息债务会让收入大量用于利息，靠近“斩杀线”。",
+      options: [
+        { label: "是（经常只还最低还款/利息压力大）", score: -8 },
+        { label: "有贷款但可控（按计划还款）", score: -2 },
+        { label: "基本无高息债务", score: +2 }
+      ]
+    },
+    {
+      id: "C1",
+      module: "风险保障",
+      weightMax: 20,
+      title: "5) 如果主要收入者失去收入3–6个月，你家最可能发生什么？",
+      helper: "考察你的“容错空间”是否足以跨过短期风暴。",
+      options: [
+        { label: "立刻借债/拖欠", score: 0 },
+        { label: "会很紧，但勉强撑", score: 10 },
+        { label: "能靠储蓄+保障撑住", score: 20 }
+      ]
+    },
+    {
+      id: "C2",
+      module: "风险保障",
+      weightMax: 0, // adjustment
+      title: "6) 家庭保障是否覆盖“灾难性风险”（重大疾病/意外/身故导致收入中断）？",
+      helper: "不是越多越好，而是是否覆盖关键责任期与风险点。",
+      options: [
+        { label: "没考虑过/明显不足", score: -6 },
+        { label: "有一点，但不确定够不够", score: -2 },
+        { label: "有清晰规划并定期复盘", score: +2 }
+      ]
+    },
+    {
+      id: "D1",
+      module: "Plan B / 多元收入",
+      weightMax: 20,
+      title: "7) 你家的收入来源结构更接近哪一种？",
+      helper: "收入越集中，风险越高；越分散，韧性越强。",
+      options: [
+        { label: "单一工资为主", score: 0 },
+        { label: "双工资，但同一行业/同风险", score: 5 },
+        { label: "双工资且行业分散", score: 10 },
+        { label: "有非工资收入≥10%（租金/分红/副业等）", score: 20 }
+      ]
+    },
+    {
+      id: "D2",
+      module: "Plan B / 多元收入",
+      weightMax: 0, // adjustment
+      title: "8) 如果你现在失去工作，你有Plan B可在90天内启动现金流吗？",
+      helper: "Plan B不是幻想，是可执行的“第二套现金流系统”。",
+      options: [
+        { label: "没有", score: -6 },
+        { label: "有想法但没开始", score: -2 },
+        { label: "已开始但不稳定", score: +1 },
+        { label: "已有稳定第二收入/可复制系统", score: +4 }
+      ]
+    }
+  ];
+
+  const MODULE_MAX = {
+    "现金缓冲": 30,
+    "固定支出压力": 30,
+    "风险保障": 20,
+    "Plan B / 多元收入": 20
+  };
+
+  const ZONES = [
+    { name: "红区（斩杀线附近）", range: [0,39], cls: "danger",
+      desc: "现金缓冲薄、固定支出高或高息债务压力大。任何意外都可能触发连锁反应。",
+      distance: "很近（风险高）",
+      actions: [
+        "本周：列出固定支出清单 + 计算固定支出/收入比例；停止新增高息债务。",
+        "30天：建立至少“半个月~1个月”应急金；启动债务止血计划（先处理高息）。",
+        "90天：把应急金提升到1–3个月；补齐最关键保障缺口；开始Plan B试点。"
+      ]
+    },
+    { name: "黄区（走钢丝）", range: [40,69], cls: "warn",
+      desc: "看似稳定但容错空间有限。遇到失业/医疗/维修等冲击，容易被迫借债。",
+      distance: "中等（需加固护栏）",
+      actions: [
+        "本周：做一次预算“体检”——固定支出、可调支出、储蓄三分法。",
+        "30天：把应急金推到1–3个月；把固定支出比例降到≤50%。",
+        "90天：完善保障结构；建立稳定自动储蓄/投资机制；推进Plan B到可产生现金流。"
+      ]
+    },
+    { name: "绿区（有护栏）", range: [70,84], cls: "good",
+      desc: "已有不错的缓冲与结构。下一步重点是优化资产配置与提升收入多元化。",
+      distance: "较远（韧性不错）",
+      actions: [
+        "本周：复盘应急金与保险配置是否匹配家庭责任期。",
+        "30天：优化税优账户与自动定投；审视固定支出是否存在“隐性膨胀”。",
+        "90天：把Plan B做成可复制流程或稳定现金流；做一次年度财务体检。"
+      ]
+    },
+    { name: "蓝区（财务韧性强）", range: [85,100], cls: "cold",
+      desc: "现金流、保障、资产配置与多元收入结构较完整。更适合做长期升级与传承规划。",
+      distance: "很远（结构优秀）",
+      actions: [
+        "本周：把家庭财务目标量化（退休/教育/购房/传承）。",
+        "30天：做资产配置再平衡，明确风险预算与再平衡规则。",
+        "90天：完善遗产/信托/受益人等传承要素；把Plan B升级为“系统”。"
+      ]
+    }
+  ];
+
+  // --- Render Questions ---
+  const qWrap = document.getElementById("questions");
+  qWrap.innerHTML = QUESTIONS.map(q => `
+    <div class="q" data-qid="${q.id}">
+      <h3>${q.title}</h3>
+      <small>${q.helper}</small>
+      <div class="opts">
+        ${q.options.map((o, idx) => `
+          <label class="opt">
+            <input type="radio" name="${q.id}" value="${o.score}" aria-label="${o.label}">
+            <span>${o.label}</span>
+          </label>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  const calcBtn = document.getElementById("calcBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const progressBar = document.getElementById("progressBar");
+  const progressText = document.getElementById("progressText");
+  const missingText = document.getElementById("missingText");
+
+  function getAnsweredCount(){
+    let answered = 0;
+    for (const q of QUESTIONS){
+      const el = document.querySelector(`input[name="${q.id}"]:checked`);
+      if (el) answered++;
+    }
+    return answered;
+  }
+
+  function updateProgress(){
+    const answered = getAnsweredCount();
+    const total = QUESTIONS.length;
+    progressText.textContent = `已完成 ${answered} / ${total}`;
+    missingText.textContent = `未完成：${total - answered}`;
+    const pct = Math.round((answered/total)*100);
+    progressBar.style.width = `${pct}%`;
+    calcBtn.disabled = answered !== total;
+    copyBtn.disabled = true;
+  }
+
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.matches('input[type="radio"]')) updateProgress();
+  });
+
+  updateProgress();
+
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+  function calcScores(){
+    // Base modules
+    let scoreA = 0, scoreB = 0, scoreC = 0, scoreD = 0;
+    // Adjustments
+    let adjA = 0, adjB = 0, adjC = 0, adjD = 0;
+
+    for (const q of QUESTIONS){
+      const chosen = document.querySelector(`input[name="${q.id}"]:checked`);
+      const val = chosen ? Number(chosen.value) : 0;
+      if (q.id === "A1") scoreA += val;
+      else if (q.id === "A2") adjA += val;
+      else if (q.id === "B1") scoreB += val;
+      else if (q.id === "B2") adjB += val;
+      else if (q.id === "C1") scoreC += val;
+      else if (q.id === "C2") adjC += val;
+      else if (q.id === "D1") scoreD += val;
+      else if (q.id === "D2") adjD += val;
+    }
+
+    // Apply adjustments with caps to keep it fair
+    scoreA = clamp(scoreA + adjA, 0, MODULE_MAX["现金缓冲"]);
+    scoreB = clamp(scoreB + adjB, 0, MODULE_MAX["固定支出压力"]);
+    scoreC = clamp(scoreC + adjC, 0, MODULE_MAX["风险保障"]);
+    scoreD = clamp(scoreD + adjD, 0, MODULE_MAX["Plan B / 多元收入"]);
+
+    const total = scoreA + scoreB + scoreC + scoreD;
+
+    return {
+      total,
+      modules: [
+        { name: "现金缓冲", score: scoreA, max: MODULE_MAX["现金缓冲"] },
+        { name: "固定支出压力", score: scoreB, max: MODULE_MAX["固定支出压力"] },
+        { name: "风险保障", score: scoreC, max: MODULE_MAX["风险保障"] },
+        { name: "Plan B / 多元收入", score: scoreD, max: MODULE_MAX["Plan B / 多元收入"] }
+      ]
+    };
+  }
+
+  function pickZone(total){
+    return ZONES.find(z => total >= z.range[0] && total <= z.range[1]) || ZONES[0];
+  }
+
+  function fmtModuleLine(m){
+    const pct = Math.round((m.score / m.max) * 100);
+    return `• ${m.name}：${m.score}/${m.max}（${pct}%）`;
+  }
+
+  function topTwoRisks(modules){
+    // Lowest % modules are top risks
+    const sorted = [...modules].sort((a,b) => (a.score/a.max) - (b.score/b.max));
+    return sorted.slice(0,2);
+  }
+
+  function bridgeText(zoneName, risks){
+    const rNames = risks.map(r => r.name).join("、");
+    return `你当前最需要先加固的是：${rNames}。在讲座里，你可以把这部分作为“从热词到行动”的主线：先解决现金缓冲与固定支出，再补齐风险保障，最后建设Plan B。`;
+  }
+
+  calcBtn.addEventListener("click", () => {
+    const { total, modules } = calcScores();
+    const zone = pickZone(total);
+    const risks = topTwoRisks(modules);
+
+    document.getElementById("result").style.display = "block";
+    document.getElementById("scoreNum").textContent = total;
+
+    const zoneTag = document.getElementById("zoneTag");
+    zoneTag.textContent = `${zone.name}｜离斩杀线：${zone.distance}`;
+    zoneTag.className = `tag ${zone.cls}`;
+
+    const zoneDesc = document.getElementById("zoneDesc");
+    zoneDesc.textContent = zone.desc;
+    zoneDesc.className = `muted ${zone.cls}`;
+
+    const hpBar = document.getElementById("hpBar");
+    hpBar.style.width = `${total}%`;
+    document.getElementById("hpText").textContent = `你的“血条”≈ ${total}%（越高越安全）`;
+
+    document.getElementById("moduleScores").innerHTML = modules.map(fmtModuleLine).join("<br>");
+
+    document.getElementById("topRisks").innerHTML = risks.map(r => {
+      const pct = Math.round((r.score/r.max)*100);
+      return `• ${r.name}（${pct}%）：优先补短板`;
+    }).join("<br>");
+
+    document.getElementById("actions").innerHTML =
+      `• 本周：${zone.actions[0]}<br>• 30天：${zone.actions[1]}<br>• 90天：${zone.actions[2]}`;
+
+    document.getElementById("bridge").textContent = bridgeText(zone.name, risks);
+
+    copyBtn.disabled = false;
+
+    // Scroll to result
+    document.getElementById("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  resetBtn.addEventListener("click", () => {
+    for (const q of QUESTIONS){
+      const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+      if (checked) checked.checked = false;
+    }
+    document.getElementById("result").style.display = "none";
+    updateProgress();
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    const score = document.getElementById("scoreNum").textContent;
+    const zone = document.getElementById("zoneTag").textContent;
+    const ms = document.getElementById("moduleScores").innerText;
+    const risks = document.getElementById("topRisks").innerText;
+    const actions = document.getElementById("actions").innerText;
+
+    const text =
+`斩杀线距离测评结果
+- ${zone}
+- 总分：${score}/100
+- 模块得分：
+${ms}
+- 主要风险：
+${risks}
+- 行动建议：
+${actions}`;
+
+    try{
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = "已复制 ✅";
+      setTimeout(() => copyBtn.textContent = "复制结果摘要", 1500);
+    }catch(e){
+      alert("复制失败：你的浏览器可能不允许剪贴板权限。你可以手动选中文本复制。");
+    }
+  });
+</script>
+</body>
+</html>
+
